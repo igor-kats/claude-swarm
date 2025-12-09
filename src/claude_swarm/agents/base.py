@@ -301,7 +301,7 @@ class BaseAgent(ABC):
                         continue
                 else:
                     # Fallback to background execution
-                    print(f"⚠️  No terminal emulator found, running in background...")
+                    print("⚠️  No terminal emulator found, running in background...")
                     return self._invoke_background(prompt)
 
             else:
