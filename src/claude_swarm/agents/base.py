@@ -109,12 +109,12 @@ class BaseAgent(ABC):
         self.workspace = workspace
         self.config = config_override or {}
         
-        # Apply config overrides
-        if "system_prompt_override" in self.config:
+        # Apply config overrides (only if values are set)
+        if self.config.get("system_prompt_override"):
             self.system_prompt = self.config["system_prompt_override"]
-        if "allowed_tools" in self.config:
+        if self.config.get("allowed_tools"):
             self.allowed_tools = self.config["allowed_tools"]
-        if "max_turns" in self.config:
+        if self.config.get("max_turns"):
             self.max_turns = self.config["max_turns"]
     
     def invoke(

@@ -27,8 +27,9 @@ ENV/
 htmlcov/
 .tox/
 
-# Claude Swarm runtime files
+# Claude Swarm
 .swarm/
+.swarm.yaml
 
 # Environment variables
 .env

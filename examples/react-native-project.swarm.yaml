@@ -1,0 +1,110 @@
+# Claude Swarm Configuration - React Native / Expo Project
+# Example configuration for mobile app development
+
+project_type: react-native
+workspace_dir: .swarm
+
+# Orchestrator settings
+orchestrator:
+  max_context_tokens: 10000
+  summary_max_tokens: 600
+  auto_pipeline: true
+  parallel_reviews: true
+  require_security_pass: true
+  require_tests: true
+
+# Agent configurations
+agents:
+  coder:
+    enabled: true
+    max_turns: 20
+    custom_instructions: |
+      React Native best practices:
+      - Use functional components with hooks
+      - Follow the project's existing component structure
+      - Use TypeScript with strict types
+      - Implement proper error boundaries
+      - Consider both iOS and Android behavior differences
+      - Use StyleSheet.create for styles
+
+  mobile_ui:
+    enabled: true
+    max_turns: 15
+    custom_instructions: |
+      UI/UX guidelines:
+      - Follow platform design guidelines (Material/HIG)
+      - Ensure accessibility (accessibilityLabel, roles)
+      - Handle safe areas and notches
+      - Implement loading and error states
+      - Use FlatList/SectionList for long lists
+      - Consider keyboard avoiding behavior
+
+  reviewer:
+    enabled: true
+    max_turns: 10
+    custom_instructions: |
+      React Native specific review:
+      - Check for unnecessary re-renders
+      - Verify proper use of useMemo/useCallback
+      - Check for inline functions in render
+      - Verify navigation prop types
+      - Check for proper error handling
+
+  security:
+    enabled: true
+    max_turns: 10
+    custom_instructions: |
+      Mobile security checklist:
+      - No hardcoded API keys or secrets
+      - Secure storage for sensitive data (Keychain/Keystore)
+      - Validate user input on frontend AND backend
+      - Check for proper certificate pinning
+      - Review deep link handling
+      - Check AsyncStorage for sensitive data
+
+  tester:
+    enabled: true
+    max_turns: 15
+    custom_instructions: |
+      Testing approach:
+      - Use Jest for unit tests
+      - Use React Native Testing Library for component tests
+      - Test hooks with @testing-library/react-hooks
+      - Mock native modules properly
+      - Write E2E tests with Detox for critical flows
+
+  docs:
+    enabled: false
+
+# Project structure
+source_dirs:
+  - src
+  - app
+  - components
+  - screens
+  - hooks
+  - utils
+  - services
+  - navigation
+  - store
+  - assets
+
+test_dirs:
+  - __tests__
+  - tests
+  - e2e
+
+# Patterns to ignore
+ignore_patterns:
+  - node_modules
+  - .git
+  - .swarm
+  - ios/Pods
+  - android/build
+  - android/.gradle
+  - .expo
+  - .expo-shared
+  - "*.hprof"
+  - "*.log"
+  - coverage
+  - .jest

@@ -1,0 +1,108 @@
+# Claude Swarm Configuration - TypeScript/Node.js Project
+# Example configuration for backend TypeScript projects (Express, NestJS, etc.)
+
+project_type: typescript
+workspace_dir: .swarm
+
+# Orchestrator settings
+orchestrator:
+  max_context_tokens: 8000
+  summary_max_tokens: 500
+  auto_pipeline: true
+  parallel_reviews: true
+  require_security_pass: true
+  require_tests: true
+
+# Agent configurations
+agents:
+  coder:
+    enabled: true
+    max_turns: 15
+    custom_instructions: |
+      TypeScript best practices:
+      - Use strict TypeScript configuration
+      - Define explicit return types for functions
+      - Use interfaces for object shapes
+      - Prefer readonly where immutability is desired
+      - Use enums or const assertions for constants
+      - Avoid 'any' type - use 'unknown' if needed
+
+  reviewer:
+    enabled: true
+    max_turns: 10
+    custom_instructions: |
+      TypeScript code review focus:
+      - Check for proper error handling with typed errors
+      - Verify async/await usage and error propagation
+      - Look for potential null/undefined issues
+      - Check for proper dependency injection
+      - Verify API contracts match types
+
+  security:
+    enabled: true
+    max_turns: 10
+    custom_instructions: |
+      Node.js security checklist:
+      - SQL/NoSQL injection prevention
+      - Input validation with schemas (Zod, Joi)
+      - Proper authentication/authorization
+      - Rate limiting and CORS configuration
+      - Environment variable handling
+      - Dependency audit (npm audit)
+      - No secrets in code or logs
+
+  tester:
+    enabled: true
+    max_turns: 15
+    custom_instructions: |
+      Testing strategy:
+      - Use Jest or Vitest for unit tests
+      - Use Supertest for API integration tests
+      - Mock external services properly
+      - Test error scenarios and edge cases
+      - Use test containers for database tests
+
+  aws:
+    enabled: true
+    max_turns: 15
+    custom_instructions: |
+      AWS/Cloud focus:
+      - Lambda cold start optimization
+      - DynamoDB access patterns
+      - S3 operations with proper IAM
+      - API Gateway configuration
+      - CloudWatch logging and metrics
+
+  docs:
+    enabled: false
+
+# Project structure
+source_dirs:
+  - src
+  - lib
+  - app
+  - routes
+  - controllers
+  - services
+  - models
+  - middleware
+
+test_dirs:
+  - __tests__
+  - tests
+  - test
+  - src/**/*.test.ts
+  - src/**/*.spec.ts
+
+# Patterns to ignore
+ignore_patterns:
+  - node_modules
+  - .git
+  - .swarm
+  - dist
+  - build
+  - coverage
+  - "*.js.map"
+  - "*.d.ts"
+  - .env
+  - .env.*

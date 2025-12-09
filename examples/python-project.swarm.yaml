@@ -1,0 +1,86 @@
+# Claude Swarm Configuration - Python Project
+# Example configuration for Python/Django/FastAPI projects
+
+project_type: python
+workspace_dir: .swarm
+
+# Orchestrator settings
+orchestrator:
+  max_context_tokens: 8000
+  summary_max_tokens: 500
+  auto_pipeline: true
+  parallel_reviews: true
+  require_security_pass: true
+  require_tests: true
+
+# Agent configurations
+agents:
+  coder:
+    enabled: true
+    max_turns: 15
+    custom_instructions: |
+      Follow PEP 8 style guidelines.
+      Use type hints for function parameters and return types.
+      Prefer f-strings over .format() or % formatting.
+      Use pathlib.Path instead of os.path where possible.
+
+  reviewer:
+    enabled: true
+    max_turns: 10
+    custom_instructions: |
+      Check for Python-specific issues:
+      - Mutable default arguments
+      - Missing __init__.py files
+      - Circular imports
+      - Exception handling best practices
+
+  security:
+    enabled: true
+    max_turns: 10
+    custom_instructions: |
+      Python-specific security checks:
+      - SQL injection via string formatting
+      - pickle/yaml.load deserialization
+      - subprocess shell=True usage
+      - eval/exec usage
+      - Hardcoded secrets
+
+  tester:
+    enabled: true
+    max_turns: 15
+    custom_instructions: |
+      Use pytest as the test framework.
+      Use pytest fixtures for setup/teardown.
+      Mock external dependencies with pytest-mock.
+      Aim for >80% code coverage on new code.
+
+  docs:
+    enabled: false
+
+# Project structure
+source_dirs:
+  - src
+  - app
+  - lib
+
+test_dirs:
+  - tests
+  - test
+
+# Patterns to ignore
+ignore_patterns:
+  - __pycache__
+  - .git
+  - .swarm
+  - venv
+  - .venv
+  - .env
+  - "*.pyc"
+  - "*.pyo"
+  - "*.egg-info"
+  - dist
+  - build
+  - .pytest_cache
+  - .mypy_cache
+  - .ruff_cache
+  - htmlcov
