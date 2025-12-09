@@ -289,10 +289,12 @@ class Orchestrator:
         # 2. Parallel security and code review
         review_tasks = []
 
-        if not skip_security and self.config.agents.get("security", {}).get("enabled", True):
+        security_config = self.config.agents.get("security")
+        if not skip_security and (security_config is None or security_config.enabled):
             review_tasks.append(("security", AgentType.SECURITY))
 
-        if not skip_review and self.config.agents.get("reviewer", {}).get("enabled", True):
+        reviewer_config = self.config.agents.get("reviewer")
+        if not skip_review and (reviewer_config is None or reviewer_config.enabled):
             review_tasks.append(("review", AgentType.REVIEWER))
 
         if review_tasks and self.config.orchestrator.parallel_reviews:
@@ -330,7 +332,8 @@ class Orchestrator:
 
         # 3. Tests
         if not skip_tests and self.config.orchestrator.require_tests:
-            if self.config.agents.get("tester", {}).get("enabled", True):
+            tester_config = self.config.agents.get("tester")
+            if tester_config is None or tester_config.enabled:
                 print("🧪 Running tester agent...")
                 test_result = self.invoke_agent(
                     AgentType.TESTER,
