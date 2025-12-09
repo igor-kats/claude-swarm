@@ -5,17 +5,17 @@ Agent registry for managing agent types and creation.
 from pathlib import Path
 from typing import Optional, Type
 
-from claude_swarm.agents.base import BaseAgent, AgentType
+from claude_swarm.agents.base import AgentType, BaseAgent
 from claude_swarm.agents.specialized import (
+    ArchitectAgent,
+    AWSAgent,
     CoderAgent,
+    DebuggerAgent,
+    DocsAgent,
+    MobileUIAgent,
     ReviewerAgent,
     SecurityAgent,
     TesterAgent,
-    DocsAgent,
-    ArchitectAgent,
-    DebuggerAgent,
-    MobileUIAgent,
-    AWSAgent,
 )
 
 

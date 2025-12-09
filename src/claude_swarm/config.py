@@ -3,9 +3,10 @@ Configuration management for Claude Swarm.
 Handles project detection, config loading, and defaults.
 """
 
+from enum import Enum
 from pathlib import Path
 from typing import Optional
-from enum import Enum
+
 import yaml
 from pydantic import BaseModel, Field
 

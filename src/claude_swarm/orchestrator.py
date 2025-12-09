@@ -4,17 +4,16 @@ Coordinates agents, manages state, and maintains minimal context.
 """
 
 import json
-import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import Optional
-from enum import Enum
 
-from claude_swarm.config import SwarmConfig, load_config
-from claude_swarm.agents.base import AgentType, AgentResult
+from claude_swarm.agents.base import AgentResult, AgentType
 from claude_swarm.agents.registry import AgentRegistry
+from claude_swarm.config import SwarmConfig, load_config
 
 
 class TaskStatus(str, Enum):

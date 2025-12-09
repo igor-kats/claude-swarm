@@ -2,7 +2,7 @@
 Specialized agent implementations.
 """
 
-from claude_swarm.agents.base import BaseAgent, AgentType
+from claude_swarm.agents.base import AgentType, BaseAgent
 
 
 class CoderAgent(BaseAgent):
@@ -69,7 +69,7 @@ You do NOT write code - only analyze and report issues.
 
 ## Issue Severity Levels
 - `critical`: Will cause bugs or crashes in production
-- `warning`: Should be fixed but won't break functionality  
+- `warning`: Should be fixed but won't break functionality
 - `info`: Suggestions for improvement
 
 ## Guidelines

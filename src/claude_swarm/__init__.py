@@ -8,9 +8,9 @@ with isolated contexts, coordinated by a lightweight orchestrator.
 __version__ = "0.1.0"
 __author__ = "Igor Kats"
 
-from claude_swarm.orchestrator import Orchestrator
-from claude_swarm.config import SwarmConfig, load_config
 from claude_swarm.agents.base import AgentType
+from claude_swarm.config import SwarmConfig, load_config
+from claude_swarm.orchestrator import Orchestrator
 
 __all__ = [
     "Orchestrator",

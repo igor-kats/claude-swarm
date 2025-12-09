@@ -2,19 +2,18 @@
 CLI interface for Claude Swarm.
 """
 
-import click
-from pathlib import Path
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.syntax import Syntax
-from rich.progress import Progress, SpinnerColumn, TextColumn
 import json
+from pathlib import Path
 
-from claude_swarm.config import load_config, init_config, detect_project_type
-from claude_swarm.orchestrator import Orchestrator
+import click
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
+
 from claude_swarm.agents.base import AgentType
-
+from claude_swarm.config import detect_project_type, init_config, load_config
+from claude_swarm.orchestrator import Orchestrator
 
 console = Console()
 

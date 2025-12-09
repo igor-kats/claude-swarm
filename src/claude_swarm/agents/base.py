@@ -2,16 +2,16 @@
 Base agent definitions and types.
 """
 
+import hashlib
+import json
+import re
+import subprocess
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Optional
-import subprocess
-import json
-import re
-import hashlib
-from datetime import datetime
 
 
 class AgentType(str, Enum):
