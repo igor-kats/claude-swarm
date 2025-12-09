@@ -106,10 +106,14 @@ class BaseAgent(ABC):
         project_root: Path,
         workspace: Path,
         config_override: Optional[dict] = None,
+        verbose: bool = False,
+        interactive: bool = False,
     ):
         self.project_root = project_root
         self.workspace = workspace
         self.config = config_override or {}
+        self.verbose = verbose
+        self.interactive = interactive
 
         # Apply config overrides (only if values are set)
         if self.config.get("system_prompt_override"):
@@ -141,43 +145,28 @@ class BaseAgent(ABC):
         task_file.parent.mkdir(parents=True, exist_ok=True)
         task_file.write_text(prompt)
 
-        # Invoke Claude Code
-        try:
-            result = subprocess.run(
-                [
-                    "claude",
-                    "--print",
-                    "--output-format",
-                    "json",
-                    "--max-turns",
-                    str(self.max_turns),
-                    "--allowedTools",
-                    ",".join(self.allowed_tools),
-                    "--system-prompt",
-                    self.system_prompt,
-                    "-p",
-                    prompt,
-                ],
-                capture_output=True,
-                text=True,
-                cwd=self.project_root,
-                timeout=300,  # 5 minute timeout per agent
-            )
+        if self.verbose:
+            print(f"\n{'='*60}")
+            print(f"🤖 Agent: {self.agent_type.value.upper()}")
+            print(f"📝 Task ID: {task_id}")
+            print(f"🔧 Max turns: {self.max_turns}")
+            print(f"🛠️  Tools: {', '.join(self.allowed_tools)}")
+            print(f"📁 Working dir: {self.project_root}")
+            print(f"{'='*60}\n")
 
-            output = result.stdout
-            success = result.returncode == 0
-
-        except subprocess.TimeoutExpired:
-            output = "Agent timed out after 5 minutes"
-            success = False
-        except FileNotFoundError:
-            output = "Claude CLI not found. Please install claude-code."
-            success = False
-        except Exception as e:
-            output = f"Error invoking agent: {str(e)}"
-            success = False
+        if self.interactive:
+            # Run in a new terminal tab
+            output, success = self._invoke_interactive(prompt, task_id)
+        else:
+            # Run in background with captured output
+            output, success = self._invoke_background(prompt)
 
         execution_time = (datetime.now() - start_time).total_seconds()
+
+        if self.verbose:
+            print(f"\n{'='*60}")
+            print(f"✅ Agent {self.agent_type.value} completed in {execution_time:.1f}s")
+            print(f"{'='*60}\n")
 
         # Parse the output
         parsed = self._parse_output(output)
@@ -225,6 +214,121 @@ class BaseAgent(ABC):
         parts.append(f"\n\n# Output Requirements\n\n{self._get_output_format()}")
 
         return "\n".join(parts)
+
+    def _invoke_background(self, prompt: str) -> tuple[str, bool]:
+        """Invoke Claude Code in background with captured output."""
+        try:
+            result = subprocess.run(
+                [
+                    "claude",
+                    "--print",
+                    "--output-format",
+                    "json",
+                    "--max-turns",
+                    str(self.max_turns),
+                    "--allowedTools",
+                    ",".join(self.allowed_tools),
+                    "--system-prompt",
+                    self.system_prompt,
+                    "-p",
+                    prompt,
+                ],
+                capture_output=True,
+                text=True,
+                cwd=self.project_root,
+                timeout=600,  # 10 minute timeout per agent
+            )
+
+            return result.stdout, result.returncode == 0
+
+        except subprocess.TimeoutExpired:
+            return "Agent timed out after 10 minutes", False
+        except FileNotFoundError:
+            return "Claude CLI not found. Please install claude-code.", False
+        except Exception as e:
+            return f"Error invoking agent: {str(e)}", False
+
+    def _invoke_interactive(self, prompt: str, task_id: str) -> tuple[str, bool]:
+        """Invoke Claude Code in a new terminal tab for interactive viewing."""
+        import platform
+        import time
+
+        # Save prompt to a temp file for the script to read
+        prompt_file = self.workspace / "tasks" / f"{self.agent_type.value}_{task_id}_prompt.txt"
+        prompt_file.write_text(prompt)
+
+        # Output file where Claude will write results
+        output_file = self.workspace / "tasks" / f"{self.agent_type.value}_{task_id}_output.json"
+
+        # Build the claude command
+        claude_cmd = (
+            f'claude --print --output-format json '
+            f'--max-turns {self.max_turns} '
+            f'--allowedTools "{",".join(self.allowed_tools)}" '
+            f'--system-prompt "{self.system_prompt}" '
+            f'-p "$(cat {prompt_file})" > {output_file} 2>&1; '
+            f'echo "\\n\\n=== Agent {self.agent_type.value} completed. Press any key to close ===" && read -n 1'
+        )
+
+        system = platform.system()
+
+        try:
+            if system == "Darwin":  # macOS
+                # Open a new Terminal tab
+                apple_script = f'''
+                tell application "Terminal"
+                    activate
+                    do script "cd {self.project_root} && echo '🤖 Running {self.agent_type.value} agent...' && echo '' && {claude_cmd}"
+                end tell
+                '''
+                subprocess.run(["osascript", "-e", apple_script], check=True)
+
+            elif system == "Linux":
+                # Try common terminal emulators
+                terminals = [
+                    ["gnome-terminal", "--", "bash", "-c"],
+                    ["xterm", "-e", "bash", "-c"],
+                    ["konsole", "-e", "bash", "-c"],
+                ]
+                for term_cmd in terminals:
+                    try:
+                        subprocess.Popen(
+                            term_cmd + [f'cd {self.project_root} && {claude_cmd}'],
+                            start_new_session=True
+                        )
+                        break
+                    except FileNotFoundError:
+                        continue
+                else:
+                    # Fallback to background execution
+                    print(f"⚠️  No terminal emulator found, running in background...")
+                    return self._invoke_background(prompt)
+
+            else:
+                # Windows or unknown - fall back to background
+                print(f"⚠️  Interactive mode not supported on {system}, running in background...")
+                return self._invoke_background(prompt)
+
+            # Wait for the output file to be created and completed
+            print(f"⏳ Waiting for {self.agent_type.value} agent to complete...")
+            max_wait = 600  # 10 minutes
+            wait_time = 0
+            poll_interval = 2
+
+            while wait_time < max_wait:
+                time.sleep(poll_interval)
+                wait_time += poll_interval
+
+                if output_file.exists():
+                    # Check if file has content and is complete (ends with })
+                    content = output_file.read_text()
+                    if content.strip() and (content.strip().endswith("}") or "error" in content.lower()):
+                        return content, True
+
+            return "Agent timed out waiting for interactive completion", False
+
+        except Exception as e:
+            return f"Error launching interactive terminal: {str(e)}", False
 
     @abstractmethod
     def _get_output_format(self) -> str:

@@ -51,6 +51,8 @@ class AgentRegistry:
         project_root: Path,
         workspace: Path,
         config_override: Optional[dict] = None,
+        verbose: bool = False,
+        interactive: bool = False,
     ) -> BaseAgent:
         """Create an agent instance."""
         agent_class = cls.get(agent_type)
@@ -61,6 +63,8 @@ class AgentRegistry:
             project_root=project_root,
             workspace=workspace,
             config_override=config_override,
+            verbose=verbose,
+            interactive=interactive,
         )
 
     @classmethod

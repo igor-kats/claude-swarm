@@ -114,9 +114,13 @@ class Orchestrator:
         self,
         project_root: Optional[Path] = None,
         config: Optional[SwarmConfig] = None,
+        verbose: bool = False,
+        interactive: bool = False,
     ):
         self.project_root = Path(project_root or Path.cwd()).resolve()
         self.config = config or load_config(self.project_root)
+        self.verbose = verbose
+        self.interactive = interactive
 
         # Setup workspace
         self.workspace = self.project_root / self.config.workspace_dir
@@ -221,6 +225,8 @@ class Orchestrator:
             project_root=self.project_root,
             workspace=self.workspace,
             config_override=agent_config,
+            verbose=self.verbose,
+            interactive=self.interactive,
         )
 
         # Build additional context from recent summaries

@@ -96,47 +96,74 @@ def status():
     help="Agent to use",
 )
 @click.option("--no-pipeline", is_flag=True, help="Skip automatic review/test pipeline")
-def run(task: str, context: tuple, agent: str, no_pipeline: bool):
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed agent output")
+@click.option("--interactive", "-i", is_flag=True, help="Run agents in separate terminal tabs")
+def run(task: str, context: tuple, agent: str, no_pipeline: bool, verbose: bool, interactive: bool):
     """Run a task with the swarm.
 
     Examples:
         swarm run "Add user authentication"
         swarm run "Fix the login bug" --agent debugger
         swarm run "Implement feature X" --context src/main.py
+        swarm run "Add feature" -v  # verbose output
+        swarm run "Add feature" -i  # interactive mode (separate terminals)
     """
     try:
         config = load_config()
-        orchestrator = Orchestrator(config=config)
+        orchestrator = Orchestrator(config=config, verbose=verbose, interactive=interactive)
 
         context_files = list(context) if context else None
         agent_type = AgentType(agent)
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
+        if interactive:
+            console.print("[cyan]🖥️  Running in interactive mode - agents will open in separate terminals[/cyan]\n")
 
-            if no_pipeline or agent_type != AgentType.CODER:
-                # Single agent execution
-                progress.add_task(f"Running {agent_type.value} agent...", total=None)
+        if verbose:
+            console.print("[cyan]📝 Verbose mode enabled[/cyan]\n")
+
+        if no_pipeline or agent_type != AgentType.CODER:
+            # Single agent execution
+            if not interactive:
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    console=console,
+                ) as progress:
+                    progress.add_task(f"Running {agent_type.value} agent...", total=None)
+                    result = orchestrator.invoke_agent(
+                        agent_type,
+                        task,
+                        context_files=context_files,
+                    )
+            else:
                 result = orchestrator.invoke_agent(
                     agent_type,
                     task,
                     context_files=context_files,
                 )
 
-                _display_result(result)
+            _display_result(result)
+        else:
+            # Full pipeline
+            if not interactive:
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    console=console,
+                ) as progress:
+                    progress.add_task("Running development pipeline...", total=None)
+                    results = orchestrator.run_pipeline(
+                        task,
+                        context_files=context_files,
+                    )
             else:
-                # Full pipeline
-                progress.add_task("Running development pipeline...", total=None)
                 results = orchestrator.run_pipeline(
                     task,
                     context_files=context_files,
                 )
 
-                for name, result in results.items():
-                    _display_result(result, name)
+            for name, result in results.items():
+                _display_result(result, name)
 
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
