@@ -304,6 +304,8 @@ swarm summaries  # Check what security found
 
 Then fix the issues and re-run.
 
+**See [FAQ.md](FAQ.md) for more questions and troubleshooting.**
+
 ## License
 
 MIT
