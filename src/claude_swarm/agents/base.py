@@ -262,8 +262,8 @@ class BaseAgent(ABC):
 
         # Build the claude command
         claude_cmd = (
-            f'claude --print --output-format json '
-            f'--max-turns {self.max_turns} '
+            f"claude --print --output-format json "
+            f"--max-turns {self.max_turns} "
             f'--allowedTools "{",".join(self.allowed_tools)}" '
             f'--system-prompt "{self.system_prompt}" '
             f'-p "$(cat {prompt_file})" > {output_file} 2>&1; '
@@ -275,12 +275,12 @@ class BaseAgent(ABC):
         try:
             if system == "Darwin":  # macOS
                 # Open a new Terminal tab
-                apple_script = f'''
+                apple_script = f"""
                 tell application "Terminal"
                     activate
                     do script "cd {self.project_root} && echo '🤖 Running {self.agent_type.value} agent...' && echo '' && {claude_cmd}"
                 end tell
-                '''
+                """
                 subprocess.run(["osascript", "-e", apple_script], check=True)
 
             elif system == "Linux":
@@ -293,8 +293,8 @@ class BaseAgent(ABC):
                 for term_cmd in terminals:
                     try:
                         subprocess.Popen(
-                            term_cmd + [f'cd {self.project_root} && {claude_cmd}'],
-                            start_new_session=True
+                            term_cmd + [f"cd {self.project_root} && {claude_cmd}"],
+                            start_new_session=True,
                         )
                         break
                     except FileNotFoundError:
@@ -322,7 +322,9 @@ class BaseAgent(ABC):
                 if output_file.exists():
                     # Check if file has content and is complete (ends with })
                     content = output_file.read_text()
-                    if content.strip() and (content.strip().endswith("}") or "error" in content.lower()):
+                    if content.strip() and (
+                        content.strip().endswith("}") or "error" in content.lower()
+                    ):
                         return content, True
 
             return "Agent timed out waiting for interactive completion", False

@@ -116,7 +116,9 @@ def run(task: str, context: tuple, agent: str, no_pipeline: bool, verbose: bool,
         agent_type = AgentType(agent)
 
         if interactive:
-            console.print("[cyan]🖥️  Running in interactive mode - agents will open in separate terminals[/cyan]\n")
+            console.print(
+                "[cyan]🖥️  Running in interactive mode - agents will open in separate terminals[/cyan]\n"
+            )
 
         if verbose:
             console.print("[cyan]📝 Verbose mode enabled[/cyan]\n")
