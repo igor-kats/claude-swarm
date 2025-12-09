@@ -11,19 +11,19 @@ When developing big features with Claude Code, you eventually hit context limits
 ## The Solution
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    ORCHESTRATOR                              │
-│  (Lightweight context - only summaries & decisions)          │
-└───────────────────────────┬─────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    ORCHESTRATOR                         │
+│  (Lightweight context - only summaries & decisions)     │
+└───────────────────────────┬─────────────────────────────┘
                             │
     ┌───────────┬───────────┼───────────┬───────────┐
     ▼           ▼           ▼           ▼           ▼
-┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐
-│ CODER  │ │REVIEWER│ │SECURITY│ │ TESTER │ │  DOCS  │
-│        │ │        │ │        │ │        │ │        │
-│ Fresh  │ │ Fresh  │ │ Fresh  │ │ Fresh  │ │ Fresh  │
-│Context │ │Context │ │Context │ │Context │ │Context │
-└────────┘ └────────┘ └────────┘ └────────┘ └────────┘
+┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐
+│ CODER  │  │REVIEWER│  │SECURITY│  │ TESTER │  │  DOCS  │
+│        │  │        │  │        │  │        │  │        │
+│ Fresh  │  │ Fresh  │  │ Fresh  │  │ Fresh  │  │ Fresh  │
+│Context │  │Context │  │Context │  │Context │  │Context │
+└────────┘  └────────┘  └────────┘  └────────┘  └────────┘
 ```
 
 Each agent:
@@ -34,15 +34,18 @@ Each agent:
 ## Installation
 
 ```bash
-# Clone the repo
-git clone https://github.com/yourusername/claude-swarm
+# Install latest version from GitHub
+pip install git+https://github.com/igor-kats/claude-swarm.git
+
+# Or install a specific version
+pip install git+https://github.com/igor-kats/claude-swarm.git@v0.2.0
+```
+
+For development:
+```bash
+git clone https://github.com/igor-kats/claude-swarm.git
 cd claude-swarm
-
-# Install in development mode
-pip install -e .
-
-# Or install directly
-pip install claude-swarm
+pip install -e ".[dev]"
 ```
 
 **Requirements:**
