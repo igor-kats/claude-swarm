@@ -16,6 +16,7 @@ from datetime import datetime
 
 class AgentType(str, Enum):
     """Types of specialized agents available."""
+
     ORCHESTRATOR = "orchestrator"
     CODER = "coder"
     REVIEWER = "reviewer"
@@ -36,6 +37,7 @@ class AgentType(str, Enum):
 @dataclass
 class AgentResult:
     """Result from an agent execution."""
+
     agent_type: AgentType
     task_id: str
     success: bool
@@ -49,7 +51,7 @@ class AgentResult:
     raw_output: Optional[str] = None
     execution_time: float = 0.0
     tokens_used: Optional[int] = None
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
         return {
@@ -66,17 +68,17 @@ class AgentResult:
             "execution_time": self.execution_time,
             "tokens_used": self.tokens_used,
         }
-    
+
     def to_summary_string(self) -> str:
         """Convert to a compact summary string for orchestrator context."""
         parts = [f"[{self.agent_type.value.upper()}]"]
         parts.append("✓" if self.success else "✗")
-        
+
         if self.files_changed:
             parts.append(f"Changed: {', '.join(self.files_changed[:3])}")
             if len(self.files_changed) > 3:
                 parts.append(f"(+{len(self.files_changed) - 3} more)")
-        
+
         if self.issues_found:
             critical = sum(1 for i in self.issues_found if i.get("severity") == "critical")
             warnings = sum(1 for i in self.issues_found if i.get("severity") == "warning")
@@ -84,21 +86,21 @@ class AgentResult:
                 parts.append(f"🔴 {critical} critical")
             if warnings:
                 parts.append(f"🟡 {warnings} warnings")
-        
+
         if self.blocked:
             parts.append(f"⛔ BLOCKED: {self.block_reason}")
-        
+
         return " | ".join(parts)
 
 
 class BaseAgent(ABC):
     """Base class for all agents."""
-    
+
     agent_type: AgentType
     system_prompt: str
     allowed_tools: list[str] = ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
     max_turns: int = 10
-    
+
     def __init__(
         self,
         project_root: Path,
@@ -108,7 +110,7 @@ class BaseAgent(ABC):
         self.project_root = project_root
         self.workspace = workspace
         self.config = config_override or {}
-        
+
         # Apply config overrides (only if values are set)
         if self.config.get("system_prompt_override"):
             self.system_prompt = self.config["system_prompt_override"]
@@ -116,7 +118,7 @@ class BaseAgent(ABC):
             self.allowed_tools = self.config["allowed_tools"]
         if self.config.get("max_turns"):
             self.max_turns = self.config["max_turns"]
-    
+
     def invoke(
         self,
         task: str,
@@ -125,41 +127,46 @@ class BaseAgent(ABC):
     ) -> AgentResult:
         """
         Invoke the agent with a task.
-        
+
         Spawns a fresh Claude Code instance with isolated context.
         """
         start_time = datetime.now()
         task_id = self._generate_task_id(task)
-        
+
         # Build the full prompt
         prompt = self._build_prompt(task, context_files, additional_context)
-        
+
         # Save task for debugging
         task_file = self.workspace / "tasks" / f"{self.agent_type.value}_{task_id}.md"
         task_file.parent.mkdir(parents=True, exist_ok=True)
         task_file.write_text(prompt)
-        
+
         # Invoke Claude Code
         try:
             result = subprocess.run(
                 [
                     "claude",
                     "--print",
-                    "--output-format", "json",
-                    "--max-turns", str(self.max_turns),
-                    "--allowedTools", ",".join(self.allowed_tools),
-                    "--system-prompt", self.system_prompt,
-                    "-p", prompt,
+                    "--output-format",
+                    "json",
+                    "--max-turns",
+                    str(self.max_turns),
+                    "--allowedTools",
+                    ",".join(self.allowed_tools),
+                    "--system-prompt",
+                    self.system_prompt,
+                    "-p",
+                    prompt,
                 ],
                 capture_output=True,
                 text=True,
                 cwd=self.project_root,
                 timeout=300,  # 5 minute timeout per agent
             )
-            
+
             output = result.stdout
             success = result.returncode == 0
-            
+
         except subprocess.TimeoutExpired:
             output = "Agent timed out after 5 minutes"
             success = False
@@ -169,16 +176,16 @@ class BaseAgent(ABC):
         except Exception as e:
             output = f"Error invoking agent: {str(e)}"
             success = False
-        
+
         execution_time = (datetime.now() - start_time).total_seconds()
-        
+
         # Parse the output
         parsed = self._parse_output(output)
-        
+
         # Save summary
         summary_file = self.workspace / "summaries" / f"{self.agent_type.value}_{task_id}.json"
         summary_file.parent.mkdir(parents=True, exist_ok=True)
-        
+
         agent_result = AgentResult(
             agent_type=self.agent_type,
             task_id=task_id,
@@ -193,11 +200,11 @@ class BaseAgent(ABC):
             raw_output=output if not success else None,
             execution_time=execution_time,
         )
-        
+
         summary_file.write_text(json.dumps(agent_result.to_dict(), indent=2))
-        
+
         return agent_result
-    
+
     def _build_prompt(
         self,
         task: str,
@@ -206,24 +213,24 @@ class BaseAgent(ABC):
     ) -> str:
         """Build the full prompt for the agent."""
         parts = [f"# Task\n\n{task}"]
-        
+
         if context_files:
             parts.append("\n\n# Relevant Files\n")
             for f in context_files:
                 parts.append(f"- `{f}`")
-        
+
         if additional_context:
             parts.append(f"\n\n# Additional Context\n\n{additional_context}")
-        
+
         parts.append(f"\n\n# Output Requirements\n\n{self._get_output_format()}")
-        
+
         return "\n".join(parts)
-    
+
     @abstractmethod
     def _get_output_format(self) -> str:
         """Get the required output format for this agent type."""
         pass
-    
+
     def _parse_output(self, output: str) -> dict:
         """Parse the agent's output to extract structured data."""
         result = {
@@ -235,9 +242,9 @@ class BaseAgent(ABC):
             "blocked": False,
             "block_reason": None,
         }
-        
+
         # Try to extract JSON summary block
-        json_match = re.search(r'```json\s*\n(\{.*?\})\s*\n```', output, re.DOTALL)
+        json_match = re.search(r"```json\s*\n(\{.*?\})\s*\n```", output, re.DOTALL)
         if json_match:
             try:
                 parsed = json.loads(json_match.group(1))
@@ -245,20 +252,20 @@ class BaseAgent(ABC):
                 return result
             except json.JSONDecodeError:
                 pass
-        
+
         # Try to extract summary block
-        summary_match = re.search(r'```summary\s*\n(.*?)\n```', output, re.DOTALL)
+        summary_match = re.search(r"```summary\s*\n(.*?)\n```", output, re.DOTALL)
         if summary_match:
             summary_text = summary_match.group(1)
             result["summary"] = summary_text
-            
+
             # Parse key-value pairs from summary
             for line in summary_text.split("\n"):
                 if ":" in line:
                     key, value = line.split(":", 1)
                     key = key.strip().lower().replace(" ", "_")
                     value = value.strip()
-                    
+
                     if key in ["files_changed", "files_created"]:
                         result[key] = [f.strip() for f in value.split(",") if f.strip()]
                     elif key == "blocked":
@@ -268,9 +275,9 @@ class BaseAgent(ABC):
         else:
             # Fallback: use last portion of output as summary
             result["summary"] = output[-1500:] if len(output) > 1500 else output
-        
+
         return result
-    
+
     def _generate_task_id(self, task: str) -> str:
         """Generate a unique task ID."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

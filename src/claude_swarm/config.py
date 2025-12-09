@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 class ProjectType(str, Enum):
     """Detected project types with specific agent configurations."""
+
     PYTHON = "python"
     REACT_NATIVE = "react-native"
     NODEJS = "nodejs"
@@ -24,6 +25,7 @@ class ProjectType(str, Enum):
 
 class AgentConfig(BaseModel):
     """Configuration for a single agent."""
+
     enabled: bool = True
     system_prompt_override: Optional[str] = None
     allowed_tools: list[str] = Field(default_factory=list)
@@ -34,6 +36,7 @@ class AgentConfig(BaseModel):
 
 class OrchestratorConfig(BaseModel):
     """Configuration for the main orchestrator."""
+
     max_context_tokens: int = 8000
     summary_max_tokens: int = 500
     auto_pipeline: bool = True  # Automatically run review/security/test after code
@@ -44,22 +47,34 @@ class OrchestratorConfig(BaseModel):
 
 class SwarmConfig(BaseModel):
     """Main configuration for the swarm."""
+
     project_type: ProjectType = ProjectType.GENERIC
     project_root: Path = Field(default_factory=Path.cwd)
     workspace_dir: str = ".swarm"
-    
+
     # Agent configurations
     orchestrator: OrchestratorConfig = Field(default_factory=OrchestratorConfig)
     agents: dict[str, AgentConfig] = Field(default_factory=dict)
-    
+
     # Project-specific settings
     source_dirs: list[str] = Field(default_factory=lambda: ["src", "lib", "app"])
     test_dirs: list[str] = Field(default_factory=lambda: ["tests", "test", "__tests__"])
-    ignore_patterns: list[str] = Field(default_factory=lambda: [
-        "node_modules", ".git", "__pycache__", ".swarm", "venv", ".venv",
-        "build", "dist", ".next", "*.pyc", "*.log"
-    ])
-    
+    ignore_patterns: list[str] = Field(
+        default_factory=lambda: [
+            "node_modules",
+            ".git",
+            "__pycache__",
+            ".swarm",
+            "venv",
+            ".venv",
+            "build",
+            "dist",
+            ".next",
+            "*.pyc",
+            "*.log",
+        ]
+    )
+
     # Custom agent definitions (for project-specific agents)
     custom_agents: dict[str, dict] = Field(default_factory=dict)
 
@@ -125,7 +140,7 @@ PROJECT_TEST_DIRS = {
 def detect_project_type(project_root: Path) -> ProjectType:
     """
     Auto-detect project type based on configuration files.
-    
+
     Checks for signature files and their contents to determine
     the most likely project type.
     """
@@ -141,14 +156,14 @@ def detect_project_type(project_root: Path) -> ProjectType:
                         return project_type
                 except Exception:
                     continue
-    
+
     return ProjectType.GENERIC
 
 
 def load_config(project_root: Optional[Path] = None) -> SwarmConfig:
     """
     Load configuration from .swarm.yaml or create defaults.
-    
+
     Priority:
     1. .swarm.yaml in project root
     2. Auto-detected settings based on project type
@@ -156,25 +171,25 @@ def load_config(project_root: Optional[Path] = None) -> SwarmConfig:
     """
     if project_root is None:
         project_root = Path.cwd()
-    
+
     config_path = project_root / ".swarm.yaml"
-    
+
     # Start with defaults
     project_type = detect_project_type(project_root)
-    
+
     config = SwarmConfig(
         project_type=project_type,
         project_root=project_root,
         source_dirs=PROJECT_SOURCE_DIRS.get(project_type, PROJECT_SOURCE_DIRS[ProjectType.GENERIC]),
         test_dirs=PROJECT_TEST_DIRS.get(project_type, PROJECT_TEST_DIRS[ProjectType.GENERIC]),
     )
-    
+
     # Override with config file if exists
     if config_path.exists():
         try:
             with open(config_path) as f:
                 yaml_config = yaml.safe_load(f)
-            
+
             if yaml_config:
                 # Merge with defaults
                 config = SwarmConfig(
@@ -182,10 +197,7 @@ def load_config(project_root: Optional[Path] = None) -> SwarmConfig:
                     project_root=project_root,
                     workspace_dir=yaml_config.get("workspace_dir", ".swarm"),
                     orchestrator=OrchestratorConfig(**yaml_config.get("orchestrator", {})),
-                    agents={
-                        k: AgentConfig(**v) 
-                        for k, v in yaml_config.get("agents", {}).items()
-                    },
+                    agents={k: AgentConfig(**v) for k, v in yaml_config.get("agents", {}).items()},
                     source_dirs=yaml_config.get("source_dirs", config.source_dirs),
                     test_dirs=yaml_config.get("test_dirs", config.test_dirs),
                     ignore_patterns=yaml_config.get("ignore_patterns", config.ignore_patterns),
@@ -194,26 +206,26 @@ def load_config(project_root: Optional[Path] = None) -> SwarmConfig:
         except Exception as e:
             # Log warning but continue with defaults
             print(f"Warning: Could not load .swarm.yaml: {e}")
-    
+
     return config
 
 
 def init_config(project_root: Optional[Path] = None, force: bool = False) -> Path:
     """
     Initialize a new .swarm.yaml configuration file.
-    
+
     Auto-detects project type and creates appropriate defaults.
     """
     if project_root is None:
         project_root = Path.cwd()
-    
+
     config_path = project_root / ".swarm.yaml"
-    
+
     if config_path.exists() and not force:
         raise FileExistsError(f"Configuration already exists at {config_path}")
-    
+
     project_type = detect_project_type(project_root)
-    
+
     config_content = f"""# Claude Swarm Configuration
 # Auto-detected project type: {project_type.value}
 
@@ -269,16 +281,16 @@ ignore_patterns:
 #     system_prompt: "You are a React Native UI specialist..."
 #     allowed_tools: ["Read", "Write", "Edit"]
 """
-    
+
     config_path.write_text(config_content)
-    
+
     # Create workspace directory
     workspace = project_root / ".swarm"
     workspace.mkdir(exist_ok=True)
     (workspace / "summaries").mkdir(exist_ok=True)
     (workspace / "tasks").mkdir(exist_ok=True)
     (workspace / "state").mkdir(exist_ok=True)
-    
+
     # Add to .gitignore if exists
     gitignore = project_root / ".gitignore"
     if gitignore.exists():
@@ -286,5 +298,5 @@ ignore_patterns:
         if ".swarm/" not in content:
             with open(gitignore, "a") as f:
                 f.write("\n# Claude Swarm\n.swarm/\n")
-    
+
     return config_path

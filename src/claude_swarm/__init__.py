@@ -14,7 +14,7 @@ from claude_swarm.agents.base import AgentType
 
 __all__ = [
     "Orchestrator",
-    "SwarmConfig", 
+    "SwarmConfig",
     "load_config",
     "AgentType",
 ]

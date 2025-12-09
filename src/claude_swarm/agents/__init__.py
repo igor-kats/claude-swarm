@@ -5,7 +5,7 @@ from claude_swarm.agents.registry import AgentRegistry, get_agent
 
 __all__ = [
     "AgentType",
-    "BaseAgent", 
+    "BaseAgent",
     "AgentResult",
     "AgentRegistry",
     "get_agent",

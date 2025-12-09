@@ -7,11 +7,11 @@ from claude_swarm.agents.base import BaseAgent, AgentType
 
 class CoderAgent(BaseAgent):
     """Agent specialized in writing code."""
-    
+
     agent_type = AgentType.CODER
     allowed_tools = ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
     max_turns = 15
-    
+
     system_prompt = """You are a specialized CODE WRITER agent in a multi-agent development system.
 
 ## Your Role
@@ -49,11 +49,11 @@ Do NOT review, test, or document - other agents handle those tasks.
 
 class ReviewerAgent(BaseAgent):
     """Agent specialized in code review."""
-    
+
     agent_type = AgentType.REVIEWER
     allowed_tools = ["Read", "Glob", "Grep"]  # Read-only
     max_turns = 10
-    
+
     system_prompt = """You are a specialized CODE REVIEWER agent in a multi-agent development system.
 
 ## Your Role
@@ -97,11 +97,11 @@ You do NOT write code - only analyze and report issues.
 
 class SecurityAgent(BaseAgent):
     """Agent specialized in security review."""
-    
+
     agent_type = AgentType.SECURITY
     allowed_tools = ["Read", "Glob", "Grep", "Bash"]
     max_turns = 10
-    
+
     system_prompt = """You are a specialized SECURITY AUDITOR agent in a multi-agent development system.
 
 ## Your Role
@@ -150,11 +150,11 @@ You are the security gate - if you find critical issues, you can BLOCK the chang
 
 class TesterAgent(BaseAgent):
     """Agent specialized in writing tests."""
-    
+
     agent_type = AgentType.TESTER
     allowed_tools = ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
     max_turns = 15
-    
+
     system_prompt = """You are a specialized TEST ENGINEER agent in a multi-agent development system.
 
 ## Your Role
@@ -198,11 +198,11 @@ You work AFTER the coder agent has implemented features.
 
 class DocsAgent(BaseAgent):
     """Agent specialized in documentation."""
-    
+
     agent_type = AgentType.DOCS
     allowed_tools = ["Read", "Write", "Edit", "Glob"]
     max_turns = 10
-    
+
     system_prompt = """You are a specialized DOCUMENTATION agent in a multi-agent development system.
 
 ## Your Role
@@ -237,11 +237,11 @@ Write clear, concise documentation that helps others understand the code.
 
 class ArchitectAgent(BaseAgent):
     """Agent specialized in architecture and planning."""
-    
+
     agent_type = AgentType.ARCHITECT
     allowed_tools = ["Read", "Glob", "Grep"]
     max_turns = 10
-    
+
     system_prompt = """You are a specialized ARCHITECT agent in a multi-agent development system.
 
 ## Your Role
@@ -287,11 +287,11 @@ You analyze requirements and break them into discrete tasks for other agents.
 
 class DebuggerAgent(BaseAgent):
     """Agent specialized in debugging issues."""
-    
+
     agent_type = AgentType.DEBUGGER
     allowed_tools = ["Read", "Bash", "Glob", "Grep", "Edit"]
     max_turns = 20
-    
+
     system_prompt = """You are a specialized DEBUGGER agent in a multi-agent development system.
 
 ## Your Role
@@ -330,11 +330,11 @@ You investigate issues, find root causes, and implement fixes.
 
 class MobileUIAgent(BaseAgent):
     """Agent specialized in mobile UI (React Native, etc.)."""
-    
+
     agent_type = AgentType.MOBILE_UI
     allowed_tools = ["Read", "Write", "Edit", "Glob"]
     max_turns = 15
-    
+
     system_prompt = """You are a specialized MOBILE UI agent in a multi-agent development system.
 
 ## Your Role
@@ -379,11 +379,11 @@ Create responsive, accessible, and performant UI components.
 
 class AWSAgent(BaseAgent):
     """Agent specialized in AWS and cloud infrastructure."""
-    
+
     agent_type = AgentType.AWS
     allowed_tools = ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
     max_turns = 15
-    
+
     system_prompt = """You are a specialized AWS/CLOUD agent in a multi-agent development system.
 
 ## Your Role
