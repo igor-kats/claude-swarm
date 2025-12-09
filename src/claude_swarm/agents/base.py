@@ -250,35 +250,57 @@ class BaseAgent(ABC):
 
     def _invoke_interactive(self, prompt: str, task_id: str) -> tuple[str, bool]:
         """Invoke Claude Code in a new terminal tab for interactive viewing."""
+        import os
         import platform
+        import stat
         import time
 
-        # Save prompt to a temp file for the script to read
+        # Save prompt to a file
         prompt_file = self.workspace / "tasks" / f"{self.agent_type.value}_{task_id}_prompt.txt"
         prompt_file.write_text(prompt)
 
-        # Output file where Claude will write results
-        output_file = self.workspace / "tasks" / f"{self.agent_type.value}_{task_id}_output.json"
-
-        # Build the claude command
-        claude_cmd = (
-            f"claude --print --output-format json "
-            f"--max-turns {self.max_turns} "
-            f'--allowedTools "{",".join(self.allowed_tools)}" '
-            f'--system-prompt "{self.system_prompt}" '
-            f'-p "$(cat {prompt_file})" > {output_file} 2>&1; '
-            f'echo "\\n\\n=== Agent {self.agent_type.value} completed. Press any key to close ===" && read -n 1'
+        # Save system prompt to a file (to avoid shell escaping issues)
+        system_prompt_file = (
+            self.workspace / "tasks" / f"{self.agent_type.value}_{task_id}_system.txt"
         )
+        system_prompt_file.write_text(self.system_prompt)
+
+        # Create a shell script to run the agent (avoids escaping issues)
+        script_file = self.workspace / "tasks" / f"{self.agent_type.value}_{task_id}_run.sh"
+        script_content = f"""#!/bin/bash
+cd "{self.project_root}"
+echo "🤖 Running {self.agent_type.value} agent..."
+echo "📁 Working directory: $(pwd)"
+echo "🔧 Max turns: {self.max_turns}"
+echo ""
+echo "{'='*60}"
+echo ""
+
+claude \\
+    --max-turns {self.max_turns} \\
+    --allowedTools "{','.join(self.allowed_tools)}" \\
+    --system-prompt "$(cat "{system_prompt_file}")" \\
+    -p "$(cat "{prompt_file}")"
+
+echo ""
+echo "{'='*60}"
+echo "✅ Agent {self.agent_type.value} completed."
+echo "Press any key to close..."
+read -n 1
+"""
+        script_file.write_text(script_content)
+        # Make executable
+        os.chmod(script_file, os.stat(script_file).st_mode | stat.S_IEXEC)
 
         system = platform.system()
 
         try:
             if system == "Darwin":  # macOS
-                # Open a new Terminal tab
+                # Open a new Terminal tab running the script
                 apple_script = f"""
                 tell application "Terminal"
                     activate
-                    do script "cd {self.project_root} && echo '🤖 Running {self.agent_type.value} agent...' && echo '' && {claude_cmd}"
+                    do script "{script_file}"
                 end tell
                 """
                 subprocess.run(["osascript", "-e", apple_script], check=True)
@@ -286,14 +308,14 @@ class BaseAgent(ABC):
             elif system == "Linux":
                 # Try common terminal emulators
                 terminals = [
-                    ["gnome-terminal", "--", "bash", "-c"],
-                    ["xterm", "-e", "bash", "-c"],
-                    ["konsole", "-e", "bash", "-c"],
+                    ["gnome-terminal", "--", "bash"],
+                    ["xterm", "-e", "bash"],
+                    ["konsole", "-e", "bash"],
                 ]
                 for term_cmd in terminals:
                     try:
                         subprocess.Popen(
-                            term_cmd + [f"cd {self.project_root} && {claude_cmd}"],
+                            term_cmd + [str(script_file)],
                             start_new_session=True,
                         )
                         break
@@ -309,25 +331,23 @@ class BaseAgent(ABC):
                 print(f"⚠️  Interactive mode not supported on {system}, running in background...")
                 return self._invoke_background(prompt)
 
-            # Wait for the output file to be created and completed
-            print(f"⏳ Waiting for {self.agent_type.value} agent to complete...")
-            max_wait = 600  # 10 minutes
-            wait_time = 0
-            poll_interval = 2
+            # In interactive mode, we don't capture output - user watches in terminal
+            # Just wait a moment and return success
+            print(f"🖥️  Agent {self.agent_type.value} launched in new terminal window")
+            print("   Watch the terminal for live output")
+            time.sleep(2)
 
-            while wait_time < max_wait:
-                time.sleep(poll_interval)
-                wait_time += poll_interval
-
-                if output_file.exists():
-                    # Check if file has content and is complete (ends with })
-                    content = output_file.read_text()
-                    if content.strip() and (
-                        content.strip().endswith("}") or "error" in content.lower()
-                    ):
-                        return content, True
-
-            return "Agent timed out waiting for interactive completion", False
+            # Return a placeholder - the user will see real output in the terminal
+            return (
+                json.dumps(
+                    {
+                        "type": "result",
+                        "subtype": "interactive",
+                        "message": f"Agent {self.agent_type.value} running in separate terminal",
+                    }
+                ),
+                True,
+            )
 
         except Exception as e:
             return f"Error launching interactive terminal: {str(e)}", False
@@ -363,6 +383,9 @@ class BaseAgent(ABC):
                     result["summary"] = f"Agent error: {raw_json.get('error', 'Unknown error')}"
                     result["blocked"] = True
                     result["block_reason"] = raw_json.get("error", "Unknown error")
+                elif subtype == "interactive":
+                    # Interactive mode - agent running in separate terminal
+                    result["summary"] = raw_json.get("message", "Running in separate terminal")
                 else:
                     # Success case - extract result text if available
                     result["summary"] = raw_json.get("result", "Task completed")
