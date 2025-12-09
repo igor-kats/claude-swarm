@@ -99,7 +99,7 @@ class BaseAgent(ABC):
     agent_type: AgentType
     system_prompt: str
     allowed_tools: list[str] = ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
-    max_turns: int = 10
+    max_turns: int = 30
 
     def __init__(
         self,
@@ -243,7 +243,28 @@ class BaseAgent(ABC):
             "block_reason": None,
         }
 
-        # Try to extract JSON summary block
+        # First, try to parse as raw JSON (Claude CLI output format)
+        try:
+            raw_json = json.loads(output)
+            if isinstance(raw_json, dict) and raw_json.get("type") == "result":
+                # This is Claude CLI's JSON output format
+                subtype = raw_json.get("subtype", "")
+                if subtype == "error_max_turns":
+                    result["summary"] = "Agent reached maximum turns limit"
+                    result["blocked"] = True
+                    result["block_reason"] = "Max turns reached - task may be too complex"
+                elif subtype == "error":
+                    result["summary"] = f"Agent error: {raw_json.get('error', 'Unknown error')}"
+                    result["blocked"] = True
+                    result["block_reason"] = raw_json.get("error", "Unknown error")
+                else:
+                    # Success case - extract result text if available
+                    result["summary"] = raw_json.get("result", "Task completed")
+                return result
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+        # Try to extract JSON summary block from markdown
         json_match = re.search(r"```json\s*\n(\{.*?\})\s*\n```", output, re.DOTALL)
         if json_match:
             try:

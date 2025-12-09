@@ -30,7 +30,7 @@ class AgentConfig(BaseModel):
     enabled: bool = True
     system_prompt_override: Optional[str] = None
     allowed_tools: list[str] = Field(default_factory=list)
-    max_turns: int = 10
+    max_turns: int = 30
     temperature: float = 0.7
     custom_instructions: Optional[str] = None
 
@@ -246,13 +246,16 @@ orchestrator:
 agents:
   coder:
     enabled: true
-    max_turns: 15
+    max_turns: 30
   reviewer:
     enabled: true
+    max_turns: 20
   security:
     enabled: true
+    max_turns: 20
   tester:
     enabled: true
+    max_turns: 30
   docs:
     enabled: false  # Enable if you want auto-documentation
 
